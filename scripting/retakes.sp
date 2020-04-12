@@ -4,6 +4,8 @@
 #include <cstrike>
 #include <smlib>
 
+#include <pugsetup>
+
 #include "include/priorityqueue.inc"
 #include "include/queue.inc"
 #include "include/restorecvars.inc"
@@ -34,6 +36,8 @@
 
 bool g_Enabled = true;
 ArrayList g_SavedCvars;
+
+bool g_PugsetupLoaded = false;
 
 /** Client variable arrays **/
 int g_SpawnIndices[MAXPLAYERS+1];
@@ -223,12 +227,22 @@ public void OnPluginStart() {
     for (int i = 0; i < MAX_SPAWNS; i++) {
         g_SpawnTypes[i] = SpawnType_Normal;
     }
+
+    g_PugsetupLoaded = LibraryExists("pugsetup");
 }
 
 public void OnPluginEnd() {
     if (g_SavedCvars != null) {
         RestoreCvars(g_SavedCvars, true);
     }
+}
+
+public void OnLibraryAdded(const char[] name) {
+  g_PugsetupLoaded = LibraryExists("pugsetup");
+}
+
+public void OnLibraryRemoved(const char[] name) {
+  g_PugsetupLoaded = LibraryExists("pugsetup");
 }
 
 public void OnMapStart() {
@@ -269,27 +283,59 @@ public void OnMapEnd() {
 }
 
 public int EnabledChanged(Handle cvar, const char[] oldValue, const char[] newValue) {
-    bool wasEnabled = !StrEqual(oldValue, "0");
-    g_Enabled = !StrEqual(newValue, "0");
+    bool wasEnabled = g_Enabled;
+    bool nowEnabled = !StrEqual(newValue, "0");
 
-    if (wasEnabled && !g_Enabled) {
-        if (g_SavedCvars != null)
-            RestoreCvars(g_SavedCvars, true);
+    if (nowEnabled && g_PugsetupLoaded && PugSetup_GetGameState() >= GameState_Warmup) {
+        nowEnabled = false;
+    }
 
-    } else if (!wasEnabled && g_Enabled) {
-        Queue_Clear(g_hWaitingQueue);
-        ExecConfigs();
-        for (int i = 1; i <= MaxClients; i++)  {
-            if (IsClientConnected(i) && !IsFakeClient(i)) {
-                OnClientConnected(i);
-                if (IsClientInGame(i) && IsOnTeam(i)) {
-                    SwitchPlayerTeam(i, CS_TEAM_SPECTATOR);
-                    Queue_Enqueue(g_hWaitingQueue, i);
-                    FakeClientCommand(i, "jointeam 2");
-                }
+    if (wasEnabled && !nowEnabled) {
+        ExitRetakeMode();
+    } else if (!wasEnabled && nowEnabled) {
+        LaunchRetakeMode();
+    }
+}
+
+public void LaunchRetakeMode() {
+    if (g_Enabled) {
+        return;
+    }
+
+    g_Enabled = true;
+
+    Queue_Clear(g_hWaitingQueue);
+    ExecConfigs();
+    for (int i = 1; i <= MaxClients; i++)  {
+        if (IsClientConnected(i) && !IsFakeClient(i)) {
+            OnClientConnected(i);
+            if (IsClientInGame(i) && IsOnTeam(i)) {
+                SwitchPlayerTeam(i, CS_TEAM_SPECTATOR);
+                Queue_Enqueue(g_hWaitingQueue, i);
+                FakeClientCommand(i, "jointeam 2");
             }
         }
     }
+
+    SetConVarInt(g_EnabledCvar, 1);
+
+    Retakes_MessageToAll("Retake mode is now enabled.");
+}
+
+public void ExitRetakeMode() {
+    if (!g_Enabled) {
+        return;
+    }
+
+    g_Enabled = false;
+
+    if (g_SavedCvars != null) {
+        RestoreCvars(g_SavedCvars, true);
+    }
+
+    SetConVarInt(g_EnabledCvar, 0);
+
+    Retakes_MessageToAll("Retake mode is now disabled.");
 }
 
 public void ExecConfigs() {
