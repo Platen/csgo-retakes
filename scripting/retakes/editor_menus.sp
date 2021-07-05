@@ -82,11 +82,16 @@ public void GiveNewSpawnMenu(int client) {
         Format(typeString, sizeof(typeString), "Normal");
     } else if (g_EditingSpawnTypes[client] == SpawnType_OnlyWithBomb) {
         Format(typeString, sizeof(typeString), "Bomb-carrier only");
-    } else {
+    } else if (g_EditingSpawnTypes[client] == SpawnType_NeverWithBomb) {
         Format(typeString, sizeof(typeString), "Never bomb-carrier");
+    } else if (g_EditingSpawnTypes[client] == SpawnType_OnlyIfMoreThanOneT) {
+        Format(typeString, sizeof(typeString), "Only if more than one T");
+    } else {
+        Format(typeString, sizeof(typeString), "Only if just one T");
     }
+
     if (g_EditingSpawnTeams[client] == CS_TEAM_CT) {
-        AddMenuOptionDisabled(menu, "type", "Spawn type: %s", typeString);
+        AddMenuOption(menu, "type", "Spawn type: %s", typeString);
     } else {
         AddMenuOption(menu, "type", "T spawn type: %s", typeString);
     }
@@ -130,6 +135,10 @@ public SpawnType NextSpawnType(SpawnType type) {
         return SpawnType_OnlyWithBomb;
     } else if (type == SpawnType_OnlyWithBomb) {
         return SpawnType_NeverWithBomb;
+    } else if (type == SpawnType_NeverWithBomb) {
+        return SpawnType_OnlyIfMoreThanOneT;
+    } else if (type == SpawnType_OnlyIfMoreThanOneT) {
+        return SpawnType_OnlyIfOneT;
     } else {
         return SpawnType_Normal;
     }

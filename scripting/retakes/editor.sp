@@ -95,10 +95,22 @@ public void DisplaySpawnPoint(int client, const float position[3], const float a
 
     int r, g, b;
     if (ct) {
-        // blue
-        r = 0;
-        g = 0;
-        b = 255;
+        if (spawnType == SpawnType_OnlyIfMoreThanOneT) {
+            // puple
+            r = 255;
+            g = 0;
+            b = 255;
+        } else if (spawnType == SpawnType_OnlyIfOneT) {
+            // cyan
+            r = 0;
+            g = 255;
+            b = 255;
+        } else {
+            // blue
+            r = 0;
+            g = 0;
+            b = 255;
+        }
     } else {
         if (spawnType == SpawnType_Normal) {
             // red
@@ -110,11 +122,21 @@ public void DisplaySpawnPoint(int client, const float position[3], const float a
             r = 0;
             g = 255;
             b = 0;
-        } else {
+        } else if (spawnType == SpawnType_NeverWithBomb) {
             // yellow
             r = 255;
             g = 255;
             b = 0;
+        } else if (spawnType == SpawnType_OnlyIfMoreThanOneT) {
+            // white
+            r = 255;
+            g = 255;
+            b = 255;
+        } else {
+            // gray
+            r = 255;
+            g = 150;
+            b = 150;
         }
     }
 

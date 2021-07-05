@@ -14,6 +14,8 @@ enum SpawnType {
     SpawnType_Normal = 0,
     SpawnType_OnlyWithBomb = 1,
     SpawnType_NeverWithBomb = 2,
+    SpawnType_OnlyIfMoreThanOneT = 3,
+    SpawnType_OnlyIfOneT = 4,
 };
 
 #define SITESTRING(%1) ((%1) == BombsiteA ? "A" : "B")

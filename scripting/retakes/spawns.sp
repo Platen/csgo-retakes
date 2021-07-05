@@ -235,13 +235,27 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 public bool CanBombCarrierSpawn(int spawn) {
     if (g_SpawnTeams[spawn] == CS_TEAM_CT)
         return false;
-    return (g_SpawnTypes[spawn] != SpawnType_NeverWithBomb) && SpawnInsideBombSite(spawn);
+
+    bool possible = true;
+    if (g_SpawnTypes[spawn] == SpawnType_OnlyIfMoreThanOneT) {
+        possible = g_NumT > 1;
+    } else if (g_SpawnTypes[spawn] == SpawnType_OnlyIfOneT) {
+        possible = g_NumT == 1;
+    }
+    return possible && (g_SpawnTypes[spawn] != SpawnType_NeverWithBomb) && SpawnInsideBombSite(spawn);
 }
 
 public bool CanRegularPlayerSpawn(int spawn) {
+    bool possible = true;
+    if (g_SpawnTypes[spawn] == SpawnType_OnlyIfMoreThanOneT) {
+        possible = g_NumT > 1;
+    } else if (g_SpawnTypes[spawn] == SpawnType_OnlyIfOneT) {
+        possible = g_NumT == 1;
+    }
+
     if (g_SpawnTeams[spawn] == CS_TEAM_CT)
-        return true;
-    return g_SpawnTypes[spawn] != SpawnType_OnlyWithBomb;
+        return possible;
+    return possible  &&  g_SpawnTypes[spawn] != SpawnType_OnlyWithBomb;
 }
 
 /**
