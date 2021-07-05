@@ -665,7 +665,6 @@ public Action Event_RoundPreStart(Event event, const char[] name, bool dontBroad
     ArrayList ts = new ArrayList();
     for (int i = 1; i < MaxClients; i++) {
         if (IsValidClient(i) && IsOnTeam(i)) {
-            Client_RemoveAllWeapons(i);
             if (GetClientTeam(i) == CS_TEAM_T) {
                 ts.Push(i);
             }
@@ -883,6 +882,9 @@ public void UpdateTeams() {
     for (int i = 0; i < ts.Length; i++) {
         int client = ts.Get(i);
         if (IsValidClient(client)) {
+            if (GetClientTeam(client) == CS_TEAM_CT) {
+              Client_RemoveAllWeapons(client);
+            }
             SwitchPlayerTeam(client, CS_TEAM_T);
             g_Team[client] = CS_TEAM_T;
             g_PlayerPrimary[client] = "weapon_ak47";
@@ -898,6 +900,9 @@ public void UpdateTeams() {
     for (int i = 0; i < cts.Length; i++) {
         int client = cts.Get(i);
         if (IsValidClient(client)) {
+            if (GetClientTeam(client) == CS_TEAM_T) {
+              Client_RemoveAllWeapons(client);
+            }
             SwitchPlayerTeam(client, CS_TEAM_CT);
             g_Team[client] = CS_TEAM_CT;
             g_PlayerPrimary[client] = "weapon_m4a1";

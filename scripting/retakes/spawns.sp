@@ -137,6 +137,9 @@ public void SetupPlayer(int client) {
     if (spawnIndex < 0)
         return;
 
+    if (GetClientTeam(client) != g_Team[client]) {
+      Client_RemoveAllWeapons(client);
+    }
     SwitchPlayerTeam(client, g_Team[client]);
     MoveToSpawn(client, spawnIndex);
     GiveWeapons(client);
@@ -151,24 +154,43 @@ public void GiveWeapons(int client) {
         return;
     }
 
-    Client_RemoveAllWeapons(client);
-
+    // knife
+    SafeRemoveWeaponBySlot(client, CS_SLOT_KNIFE);
     if (g_Team[client] == CS_TEAM_T)
         GivePlayerItem(client, "weapon_knife_t");
     else
         GivePlayerItem(client, "weapon_knife");
 
-    GivePlayerItem(client, g_PlayerPrimary[client]);
-    GivePlayerItem(client, g_PlayerSecondary[client]);
+    // primary weapon
+    if (strlen(g_PlayerPrimary[client]) > 0) {
+        if (GetPlayerWeaponSlot(client, CS_SLOT_PRIMARY) == -1) {
+            GivePlayerItem(client, g_PlayerPrimary[client]);
+        }
+    } else {
+        SafeRemoveWeaponBySlot(client, CS_SLOT_PRIMARY);
+    }
 
+    // secondary weapon
+    if (strlen(g_PlayerSecondary[client]) > 0) {
+        if (GetPlayerWeaponSlot(client, CS_SLOT_SECONDARY) == -1) {
+            GivePlayerItem(client, g_PlayerSecondary[client]);
+        }
+    } else {
+        SafeRemoveWeaponBySlot(client, CS_SLOT_SECONDARY);
+    }
+
+    // armor and health
     Client_SetArmor(client, g_PlayerArmor[client]);
     SetEntityHealth(client, g_PlayerHealth[client]);
     SetEntData(client, FindSendPropInfo("CCSPlayer", "m_bHasHelmet"), g_PlayerHelmet[client]);
 
+    // defuse kit
     if (g_Team[client] == CS_TEAM_CT) {
         SetEntProp(client, Prop_Send, "m_bHasDefuser", g_PlayerKit[client]);
     }
 
+    // nades
+    SafeRemoveNades(client);
     int len = strlen(g_PlayerNades[client]);
     for (int i = 0; i < len; i++) {
         char c = g_PlayerNades[client][i];
@@ -184,6 +206,8 @@ public void GiveWeapons(int client) {
         GivePlayerItem(client, weapon);
     }
 
+    // bomb
+    SafeRemoveWeaponBySlot(client, CS_SLOT_C4);
     if (g_BombOwner == client) {
         g_bombPlantSignal = false;
         GivePlayerItem(client, "weapon_c4");
@@ -292,4 +316,42 @@ public int SelectSpawn(int team, bool bombSpawn) {
 
 public bool IsValidSpawn(int index) {
     return index >= 0 && index < g_NumSpawns && !g_SpawnDeleted[index];
+}
+
+public void SafeRemoveNades(int client) {
+    while(SafeRemoveWeaponBySlot(client, CS_SLOT_GRENADE)){}
+}
+
+public bool SafeRemoveWeaponBySlot(int client, int slot) {
+    int weapon = GetPlayerWeaponSlot(client, slot);
+    return SafeRemoveWeapon(client, weapon);
+}
+
+// function from
+// https://github.com/b3none/retakes-autoplant/blob/master/scripting/retakes_autoplant.sp
+// (commit 134a8f0)
+public bool SafeRemoveWeapon(int client, int weapon) {
+    if (!IsValidEntity(weapon) || !IsValidEdict(weapon) || !HasEntProp(weapon, Prop_Send, "m_hOwnerEntity")) {
+        return false;
+    }
+
+    int ownerEntity = GetEntPropEnt(weapon, Prop_Send, "m_hOwnerEntity");
+
+    if (ownerEntity != client) {
+        SetEntPropEnt(weapon, Prop_Send, "m_hOwnerEntity", client);
+    }
+
+    SDKHooks_DropWeapon(client, weapon, NULL_VECTOR, NULL_VECTOR);
+
+    if (HasEntProp(weapon, Prop_Send, "m_hWeaponWorldModel")) {
+        int worldModel = GetEntPropEnt(weapon, Prop_Send, "m_hWeaponWorldModel");
+
+        if (IsValidEdict(worldModel) && IsValidEntity(worldModel)) {
+            if (!AcceptEntityInput(worldModel, "Kill")) {
+                return false;
+            }
+        }
+    }
+
+    return AcceptEntityInput(weapon, "Kill");
 }
