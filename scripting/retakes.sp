@@ -408,6 +408,12 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
         GetClientName(client, name, sizeof(name));
         ServerCommand("mp_restartgame 1");
         PrintToChatAll("\x01[\x05SM\x01] \x04%s \x01proceed restart game in \x043 \x01second", name);
+
+        for (int i = 1; i <= MaxClients; i++) {
+            if (IsValidClient(i)) {
+                Entity_Kill(i);
+            }
+        }
     }
     
     if (strcmp(args[0], ".warmupend", false) == 0) {
