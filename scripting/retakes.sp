@@ -384,6 +384,12 @@ public Action Command_Guns(int client, int args) {
 
 public Action OnClientSayCommand(int client, const char[] command, const char[] args) {
     if (!g_Enabled) {
+        if (strcmp(args[0], ".retake", false) == 0) {
+            bool pugsetup_live = g_PugsetupLoaded && PugSetup_GetGameState() != GameState_None;
+            if (!pugsetup_live) {
+              SetConVarInt(g_EnabledCvar, 1);
+            }
+        }
         return Plugin_Continue;
     }
 
@@ -395,6 +401,20 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
             Call_Finish();
             break;
         }
+    }
+    
+    if (strcmp(args[0], ".restart", false) == 0) {
+        char name[MAX_NAME_LENGTH + 1];
+        GetClientName(client, name, sizeof(name));
+        ServerCommand("mp_restartgame 1");
+        PrintToChatAll("\x01[\x05SM\x01] \x04%s \x01proceed restart game in \x043 \x01second", name);
+    }
+    
+    if (strcmp(args[0], ".warmupend", false) == 0) {
+        char name[MAX_NAME_LENGTH + 1];
+        GetClientName(client, name, sizeof(name));
+        ServerCommand("mp_warmup_end 1");
+        PrintToChatAll("\x01[\x05SM\x01] \x04%s \x01proceed end warmup in \x043 \x01second", name);
     }
 
     return Plugin_Continue;
