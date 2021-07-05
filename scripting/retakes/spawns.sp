@@ -187,7 +187,7 @@ public void GiveWeapons(int client) {
     if (g_BombOwner == client) {
         g_bombPlantSignal = false;
         GivePlayerItem(client, "weapon_c4");
-        CreateTimer(1.0, Timer_StartPlant, client);
+        CreateTimer(0.3, Timer_StartPlant, client);
     }
 }
 
