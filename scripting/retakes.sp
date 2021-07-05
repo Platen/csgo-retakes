@@ -34,7 +34,7 @@
 #define POINTS_BOMB 50
 #define POINTS_LOSS 5000
 
-bool g_Enabled = true;
+bool g_Enabled = false;
 ArrayList g_SavedCvars;
 
 bool g_PugsetupLoaded = false;
@@ -148,7 +148,7 @@ public void OnPluginStart() {
     LoadTranslations("retakes.phrases");
 
     /** ConVars **/
-    g_EnabledCvar = CreateConVar("sm_retakes_enabled", "1", "Whether the plugin is enabled");
+    g_EnabledCvar = CreateConVar("sm_retakes_enabled", "0", "Whether the plugin is enabled");
     g_hAutoTeamsCvar = CreateConVar("sm_retakes_auto_set_teams", "1", "Whether retakes is allowed to automanage team balance");
     g_hEditorEnabled = CreateConVar("sm_retakes_editor_enabled", "1", "Whether the editor can be launched by admins");
     g_hMaxPlayers = CreateConVar("sm_retakes_maxplayers", "9", "Maximum number of players allowed in the game at once.", _, true, 2.0);
@@ -352,6 +352,20 @@ public void OnClientConnected(int client) {
 public void OnClientDisconnect(int client) {
     ResetClientVariables(client);
     CheckRoundDone();
+
+    // If the server empties out, exit retake mode.
+    if (g_Enabled) {
+        int playerCount = 0;
+        for (int i = 0; i <= MaxClients; i++) {
+            if (IsPlayer(i)) {
+                playerCount++;
+            }
+        }
+        if (playerCount == 0) {
+            ExitRetakeMode();
+        }
+    }
+
 }
 
 /**
@@ -402,7 +416,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
             break;
         }
     }
-    
+
     if (strcmp(args[0], ".restart", false) == 0) {
         char name[MAX_NAME_LENGTH + 1];
         GetClientName(client, name, sizeof(name));
@@ -415,7 +429,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
             }
         }
     }
-    
+
     if (strcmp(args[0], ".warmupend", false) == 0) {
         char name[MAX_NAME_LENGTH + 1];
         GetClientName(client, name, sizeof(name));
