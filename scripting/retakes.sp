@@ -4,8 +4,6 @@
 #include <cstrike>
 #include <smlib>
 
-#include <pugsetup>
-
 #include "include/priorityqueue.inc"
 #include "include/queue.inc"
 #include "include/restorecvars.inc"
@@ -13,6 +11,7 @@
 
 #undef REQUIRE_PLUGIN
 #tryinclude <pugsetup>
+#tryinclude <get5>
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -38,6 +37,7 @@ bool g_Enabled = false;
 ArrayList g_SavedCvars;
 
 bool g_PugsetupLoaded = false;
+bool g_Get5Enabled = false;
 
 /** Client variable arrays **/
 int g_SpawnIndices[MAXPLAYERS+1];
@@ -229,6 +229,7 @@ public void OnPluginStart() {
     }
 
     g_PugsetupLoaded = LibraryExists("pugsetup");
+    g_Get5Enabled = LibraryExists("get5");
 }
 
 public void OnPluginEnd() {
@@ -238,11 +239,13 @@ public void OnPluginEnd() {
 }
 
 public void OnLibraryAdded(const char[] name) {
-  g_PugsetupLoaded = LibraryExists("pugsetup");
+    g_PugsetupLoaded = LibraryExists("pugsetup");
+    g_Get5Enabled = LibraryExists("get5");
 }
 
 public void OnLibraryRemoved(const char[] name) {
-  g_PugsetupLoaded = LibraryExists("pugsetup");
+    g_PugsetupLoaded = LibraryExists("pugsetup");
+    g_Get5Enabled = LibraryExists("get5");
 }
 
 public void OnMapStart() {
@@ -286,7 +289,7 @@ public int EnabledChanged(Handle cvar, const char[] oldValue, const char[] newVa
     bool wasEnabled = g_Enabled;
     bool nowEnabled = !StrEqual(newValue, "0");
 
-    if (nowEnabled && g_PugsetupLoaded && PugSetup_GetGameState() >= GameState_Warmup) {
+    if (nowEnabled && CheckAvtiveGame()) {
         nowEnabled = false;
     }
 
@@ -399,9 +402,9 @@ public Action Command_Guns(int client, int args) {
 public Action OnClientSayCommand(int client, const char[] command, const char[] args) {
     if (!g_Enabled) {
         if (strcmp(args[0], ".retake", false) == 0) {
-            bool pugsetup_live = g_PugsetupLoaded && PugSetup_GetGameState() != GameState_None;
-            if (!pugsetup_live) {
-              SetConVarInt(g_EnabledCvar, 1);
+            bool game_live = CheckAvtiveGame();
+            if (!game_live) {
+                SetConVarInt(g_EnabledCvar, 1);
             }
         }
         return Plugin_Continue;
@@ -994,6 +997,38 @@ public Bombsite GetOtherSite(Bombsite site) {
     return (site == BombsiteA) ? BombsiteB : BombsiteA;
 }
 
+public void BreakAllBreakables() {
+    if (!g_Enabled) {
+        return;
+    }
+
+    int ent = -1;
+    while ((ent = FindEntityByClassname(ent, "func_breakable")) != -1) {
+        AcceptEntityInput(ent, "Break");
+    }
+    while ((ent = FindEntityByClassname(ent, "prop_dynamic")) != -1) {
+        AcceptEntityInput(ent, "Break");
+    }
+}
+
+bool CheckAvtiveGame() {
+    bool live = false;
+
+#if defined _pugsetup_included
+    if (g_PugsetupLoaded) {
+        live = live || PugSetup_GetGameState() != GameState_None;
+    }
+#endif
+
+#if defined _get5_included_
+    if (g_Get5Enabled) {
+        live = live || Get5_GetGameState() != Get5State_None;
+    }
+#endif
+
+    return live;
+}
+
 // pugsetup (github.com/splewis/csgo-pug-setup) integrations
 #if defined _pugsetup_included
 public Action PugSetup_OnSetupMenuOpen(int client, Menu menu, bool displayOnly) {
@@ -1024,19 +1059,5 @@ public void PugSetup_OnSetupMenuSelect(Menu menu, int client, const char[] selec
         g_EnabledCvar.SetInt(1);
         PugSetup_GiveSetupMenu(client, false, selected_position);
     }
-}
-
-public void BreakAllBreakables() {
-  if (!g_Enabled) {
-    return;
-  }
-
-  int ent = -1;
-  while ((ent = FindEntityByClassname(ent, "func_breakable")) != -1) {
-    AcceptEntityInput(ent, "Break");
-  }
-  while ((ent = FindEntityByClassname(ent, "prop_dynamic")) != -1) {
-    AcceptEntityInput(ent, "Break");
-  }
 }
 #endif
