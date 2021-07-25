@@ -689,7 +689,6 @@ public Action Event_RoundPostStart(Event event, const char[] name, bool dontBroa
     if (!g_EditMode) {
         GameRules_SetProp("m_iRoundTime", g_hRoundTime.IntValue, 4, 0, true);
         Retakes_MessageToAll("%t", "RetakeSiteMessage", SITESTRING(g_Bombsite), g_NumT, g_NumCT);
-        BreakAllBreakables();
     }
 
     g_bombPlanted = false;
@@ -995,20 +994,6 @@ public int GetOtherTeam(int team) {
 
 public Bombsite GetOtherSite(Bombsite site) {
     return (site == BombsiteA) ? BombsiteB : BombsiteA;
-}
-
-public void BreakAllBreakables() {
-    if (!g_Enabled) {
-        return;
-    }
-
-    int ent = -1;
-    while ((ent = FindEntityByClassname(ent, "func_breakable")) != -1) {
-        AcceptEntityInput(ent, "Break");
-    }
-    while ((ent = FindEntityByClassname(ent, "prop_dynamic")) != -1) {
-        AcceptEntityInput(ent, "Break");
-    }
 }
 
 bool CheckAvtiveGame() {
